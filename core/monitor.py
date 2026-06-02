@@ -53,7 +53,7 @@ def check_health_url(url, timeout=3):
     except Exception:
         return False
 
-def restart_replica(service, replica, registry, start_times):
+def restart_replica(service, replica, registry, start_times, restart_counts):
 
     """
     Restarts ONE specific replica with exponential backoff.
@@ -103,6 +103,10 @@ def restart_replica(service, replica, registry, start_times):
             # update start time for uptime tracking
             start_times[f"{name}:{port}"] = datetime.now()
 
+            # increment restart count
+            key = f"{name}:{port}"
+            restart_counts[key] = restart_counts.get(key, 0) + 1
+
             print(f"[Monitor] ✓ {name}:{port} restarted successfully (PID {new_proc.pid})")
 
             return True
@@ -117,7 +121,7 @@ def restart_replica(service, replica, registry, start_times):
     registry.update_status(name, port, "FAILED")
     return False
 
-def monitor_loop(services, registry, start_times, chaos_probability=0.0):
+def monitor_loop(services, registry, start_times, restart_counts, chaos_probability=0.0):
 
     """
     The main monitoring loop — runs forever on a background thread.
@@ -166,7 +170,7 @@ def monitor_loop(services, registry, start_times, chaos_probability=0.0):
 
                 if not is_alive(proc):
                     registry.update_status(name, port, "DOWN")
-                    success = restart_replica(service, replica, registry, start_times)
+                    success = restart_replica(service, replica, registry, start_times, restart_counts)
                     if not success:
                         permanently_failed.add(key)
                     continue
@@ -185,13 +189,13 @@ def monitor_loop(services, registry, start_times, chaos_probability=0.0):
                 
                 else:
                     registry.update_status(name, port, "DOWN")
-                    success = restart_replica(service, replica, registry, start_times)
+                    success = restart_replica(service, replica, registry, start_times, restart_counts)
                     if not success:
                         permanently_failed.add(key)
         
         time.sleep(3)
     
-def start_monitor(services, registry, start_times, chaos_probability=0.0):
+def start_monitor(services, registry, start_times, restart_counts, chaos_probability=0.0):
 
     """
     Starts the monitor loop on a background daemon thread.
@@ -200,7 +204,7 @@ def start_monitor(services, registry, start_times, chaos_probability=0.0):
 
     thread = threading.Thread(
         target = monitor_loop,
-        args = (services, registry, start_times, chaos_probability),
+        args = (services, registry, start_times, restart_counts, chaos_probability),
         daemon = True
     )
 
