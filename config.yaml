@@ -3,12 +3,12 @@ services:
     command: "python services/api.py"
     replicas: 3
     base_port: 8000
+    balancer_port: 5001
     health_url: "http://localhost:{port}/health"
 
   - name: "worker"
     command: "python services/worker.py"
     replicas: 2
     base_port: 9000
+    balancer_port: 5002
     health_url: "http://localhost:{port}/health"
-
-

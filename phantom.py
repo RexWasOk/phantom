@@ -1,12 +1,7 @@
 # ─────────────────────────────────────────────────────────────
-# phantom.py — Day 3-4
+# phantom.py — Day 5-6
 #
-# WHAT CHANGED FROM DAY 1-2:
-# - Health monitor now running on background thread
-# - Watches every replica of every service every 3 seconds
-# - Detects death and restarts specific dead replica
-# - Other replicas keep running during restart — partial failure
-# - Chaos mode supported via --chaos flag
+# Added balancer.py
 # ─────────────────────────────────────────────────────────────
 
 import yaml
@@ -15,6 +10,7 @@ import sys
 from core.registry import ServiceRegistry
 from core.launcher import launch_service
 from core.monitor  import start_monitor
+from core.balancer import start_all_balancers
 
 def load_config(path="config.yaml"):
 
@@ -63,6 +59,10 @@ def main():
 
     # start health monitor on background thread
     start_monitor(services, registry, start_times, chaos_probability)
+
+    # start load balancers
+    start_all_balancers(services, registry)
+    print("[Phantom] Load balancers running.")
 
     print("[Phantom] Health monitor running.")
     print("[Phantom] Press Ctrl+C to stop.\n")
