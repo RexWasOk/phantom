@@ -126,7 +126,7 @@ class ServiceRegistry:
         with self._lock:
             return[
                 r for r in self._services.get(name, [])
-                if["status"] == "UP"
+                if r["status"] == "UP"
             ]
     
     def get_all_services(self):

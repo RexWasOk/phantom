@@ -40,7 +40,7 @@ class RoundRobinBalancer:
     """
 
     def __init__(self):
-        self.index = 0
+        self._index = 0
         self._lock = threading.Lock()
 
     def get_next(self, healthy_replicas):
